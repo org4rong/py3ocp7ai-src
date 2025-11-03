@@ -91,8 +91,8 @@ spec:
         ###
         # Add repo-permalinks[] annotation to deployment_patch YAML files
         #
-        readarray -t ARRAY_ENV < <(ls -1 ${overlays_filepath} | grep -v "ci")
-        echo "deployment environments: ${ARRAY_ENV[@]}"
+        # readarray -t ARRAY_ENV < <(ls -1 ${overlays_filepath} | grep -v "ci")
+        # echo "deployment environments: ${ARRAY_ENV[@]}"
 
         export PERMALINK
         if [[ ! -z $(echo "${PARAM_URL}" | grep "gitlab.com") ]]; then
@@ -100,13 +100,16 @@ spec:
         else
           PERMALINK="${PARAM_URL}/commit/${PARAM_REV}"
         fi
+        
+        echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
+        yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
 
-        for env_name in "${ARRAY_ENV[@]}"; do
-          deployment_patch_filepath="${overlays_filepath}/${env_name}/${patch_filename}"
+        # for env_name in "${ARRAY_ENV[@]}"; do
+        #   deployment_patch_filepath="${overlays_filepath}/${env_name}/${patch_filename}"
 
-          echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
-          yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
-        done
+        #   echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
+        #   yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
+        # done
 
         git add .
         git commit -m "Update '${component_name}' component image to: ${PARAM_IMAGE}"
