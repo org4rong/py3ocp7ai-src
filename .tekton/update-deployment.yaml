@@ -94,7 +94,7 @@ spec:
         export PERMALINK
         if [[ ! -z $(echo "${PARAM_URL}" | grep "gitlab.com") ]]; then
           PERMALINK="${PARAM_URL}/-/commit/${PARAM_REV}"
-        else [[ -z]]]]
+        else
           PERMALINK="${PARAM_URL}/commit/${PARAM_REV}"
         fi
 
