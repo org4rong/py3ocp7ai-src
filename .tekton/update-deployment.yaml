@@ -79,7 +79,8 @@ spec:
         gitops_repo_name=$(basename ${gitops_repo_url})
         cd ${gitops_repo_name}
 
-        component_name=$(yq .metadata.name application.yaml)
+        export component_name=$(yq .metadata.name application.yaml)
+        overlays_filepath="components/${component_name}/overlays"
         deployment_patch_filepath="components/${component_name}/overlays/development/deployment-patch.yaml"
         IMAGE_PATH='.spec.template.spec.containers[0].image'
         old_image=$(yq "${IMAGE_PATH}" "${deployment_patch_filepath}")
@@ -88,7 +89,7 @@ spec:
         ###
         # Add repo-permalinks[] annotation to deployment_patch YAML files
         #
-        readarray -t ARRAY_ENV < <(ls -1 ${overlays_filepath})
+        readarray -t ARRAY_ENV < <(ls -1 ${overlays_filepath} | grep -v "ci")
         echo "deployment environments: ${ARRAY_ENV[@]}"
 
         export PERMALINK
