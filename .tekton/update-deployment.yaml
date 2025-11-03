@@ -104,11 +104,8 @@ spec:
         for env_name in "${ARRAY_ENV[@]}"; do
           deployment_patch_filepath="${overlays_filepath}/${env_name}/${patch_filename}"
 
-          echo "Add repo-permalinks[] annotation to ${deployment_patch_filepath}"
-          yq -i 'with(.metadata.annotations;
-              .repository-permalinks = [strenv(PERMALINK)]
-            ) |
-            .metadata.annotations.repository-permalinks[] style="double"' "${deployment_patch_filepath}"
+          echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
+          yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
         done
 
         git add .
