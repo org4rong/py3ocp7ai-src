@@ -106,7 +106,7 @@ spec:
 
           echo "Add repo-permalinks[] annotation to ${deployment_patch_filepath}"
           yq -i 'with(.metadata.annotations;
-              .repository-permalinks = (.repository-permalinks // []) + [strenv(PERMALINK)]
+              .repository-permalinks = [strenv(PERMALINK)]
             ) |
             .metadata.annotations.repository-permalinks[] style="double"' "${deployment_patch_filepath}"
         done
