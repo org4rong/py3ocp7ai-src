@@ -118,11 +118,11 @@ spec:
           export IMAGE_RISK=0
           if [[ (-n $critical) && ($critical != 0) ]]; then
             IMAGE_RISK=8
-          elif [[ (-n $high) && ($high != 0)]]; then
+          elif [[ (-n $high) && ($high != 0) ]]; then
             IMAGE_RISK=6
-          elif [[ (-n $medium) && ($medium != 0)]]; then
+          elif [[ (-n $medium) && ($medium != 0) ]]; then
             IMAGE_RISK=4
-          else [[ (-n $low) && ($low != 0)]]; then
+          elif [[ (-n $low) && ($low != 0) ]]; then
             IMAGE_RISK=2
           fi
 
