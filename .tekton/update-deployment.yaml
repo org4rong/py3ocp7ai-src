@@ -49,6 +49,8 @@ spec:
           value: $(params.git-url)
         - name: PARAM_REV
           value: $(params.revision)
+        - name: IMAGE_SCAN_SUMMAY
+          value: $(tasks.acs-image-scan.results.SCAN_OUTPUT)
       script: |2
 
         if [ "${WORKSPACE_GITOPS_AUTH_DIRECTORY_BOUND}" = "true" ] ; then
@@ -107,15 +109,16 @@ spec:
         # Add "sccs-image-risk" annotation per summary for the image vulnerabiliies
         # in terms of "cveSeverity": CRITICAL, IMPORTANT, MODERATE, LOW
         # Set risk value 8 for CRITICAL as 8, 6 for IMPORTANT, 4 for MODERATE, or 2 for LOW
-        if [[ -s "/steps-shared-folder/roxctl_image_scan_output.json" ]]; then
-          export IMAGE_RISK=
-          critical=$(cat roxctl_image_scan_output.json | grep -oP '(?<="CRITICAL": )\d+')
-          high=$(cat roxctl_image_scan_output.json | grep -oP '(?<="IMPORTANT": )\d+')
-          medium=$(cat roxctl_image_scan_output.json | grep -oP '(?<="MODERATE": )\d+')
-          low=$(cat roxctl_image_scan_output.json | grep -oP '(?<="LOW": )\d+')
 
-          echo "{\"vulnerabilities\":{\"critical\":${critical},\"high\":${high},\"medium\":${medium},\"low\":${low}}}" 
+        echo "image scan summary: ${IMAGE_SCAN_SUMMAY}"
+        if [[ -n "${IMAGE_SCAN_SUMMAY}" ]]; then
+          vuln=$(echo ${IMAGE_SCAN_SUMMAY} | jq -r '.vulnerabilities')
+          critical=$(echo $vuln | jq .critical)
+          high=$(echo $vuln | jq .high)
+          medium=$(echo $vuln | jq .medium)
+          low=$(echo $vuln | jq .low)
 
+          export IMAGE_RISK=0
           if [[ (-n $critical) && ($critical != 0) ]]; then
             IMAGE_RISK=8
           elif [[ (-n $high) && ($high != 0)]]; then
@@ -126,8 +129,8 @@ spec:
             IMAGE_RISK=2
           fi
 
-          echo "Add \"sccs-image-risk\" annotation to \"${PARAM_IMAGE}\""
-          yq -i 'with(.metadata.annotations; .sscs-image-risk = strenv(PERMALINK))' "${deployment_patch_filepath}"
+          echo "Add \"sccs-image-risk\" annotation for \"${PARAM_IMAGE}\""
+          yq -i 'with(.metadata.annotations; .sscs-image-risk = env(IMAGE_RISK))' "${deployment_patch_filepath}"
         fi
 
         git add .
