@@ -33,9 +33,6 @@ spec:
     - name: patch-gitops
       image: quay.io/redhat-tssc/task-runner:1.7
       imagePullPolicy: Always
-      volumeMounts:
-        - name: shared-folder
-          mountPath: /steps-shared-folder
       env:
         - name: PARAM_GITOPS_REPO_URL
           value: $(params.gitops-repo-url)
