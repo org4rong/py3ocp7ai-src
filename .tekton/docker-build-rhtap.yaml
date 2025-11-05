@@ -205,7 +205,7 @@ spec:
         - name: revision
           value: $(params.revision)
       runAfter:
-        - build-container
+        - acs-image-scan
       taskRef:
         kind: Task
         name: update-deployment

@@ -33,6 +33,9 @@ spec:
     - name: patch-gitops
       image: quay.io/redhat-tssc/task-runner:1.7
       imagePullPolicy: Always
+      volumeMounts:
+        - name: shared-folder
+          mountPath: /steps-shared-folder
       env:
         - name: PARAM_GITOPS_REPO_URL
           value: $(params.gitops-repo-url)
@@ -89,11 +92,8 @@ spec:
         yq e -i "${IMAGE_PATH} |= \"${PARAM_IMAGE}\"" "${deployment_patch_filepath}"
 
         ###
-        # Add repo-permalinks[] annotation to deployment_patch YAML files
+        # Add "sscs-repo-permalink" annotation to deployment_patch YAML files
         #
-        # readarray -t ARRAY_ENV < <(ls -1 ${overlays_filepath} | grep -v "ci")
-        # echo "deployment environments: ${ARRAY_ENV[@]}"
-
         export PERMALINK
         if [[ ! -z $(echo "${PARAM_URL}" | grep "gitlab.com") ]]; then
           PERMALINK="${PARAM_URL}/-/commit/${PARAM_REV}"
@@ -101,15 +101,34 @@ spec:
           PERMALINK="${PARAM_URL}/commit/${PARAM_REV}"
         fi
         
-        echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
-        yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
+        echo "Add \"sscs-repo-permalink\" annotation to \"${deployment_patch_filepath}\""
+        yq -i 'with(.metadata.annotations; .sscs-repo-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
 
-        # for env_name in "${ARRAY_ENV[@]}"; do
-        #   deployment_patch_filepath="${overlays_filepath}/${env_name}/${patch_filename}"
+        # Add "sccs-image-risk" annotation per summary for the image vulnerabiliies
+        # in terms of "cveSeverity": CRITICAL, IMPORTANT, MODERATE, LOW
+        # Set risk value 8 for CRITICAL as 8, 6 for IMPORTANT, 4 for MODERATE, or 2 for LOW
+        if [[ -s "/steps-shared-folder/roxctl_image_scan_output.json" ]]; then
+          export IMAGE_RISK=
+          critical=$(cat roxctl_image_scan_output.json | grep -oP '(?<="CRITICAL": )\d+')
+          high=$(cat roxctl_image_scan_output.json | grep -oP '(?<="IMPORTANT": )\d+')
+          medium=$(cat roxctl_image_scan_output.json | grep -oP '(?<="MODERATE": )\d+')
+          low=$(cat roxctl_image_scan_output.json | grep -oP '(?<="LOW": )\d+')
 
-        #   echo "Add repository-permalink annotation to ${deployment_patch_filepath}"
-        #   yq -i 'with(.metadata.annotations; .repository-permalink = strenv(PERMALINK))' "${deployment_patch_filepath}"
-        # done
+          echo "{\"vulnerabilities\":{\"critical\":${critical},\"high\":${high},\"medium\":${medium},\"low\":${low}}}" 
+
+          if [[ (-n $critical) && ($critical != 0) ]]; then
+            IMAGE_RISK=8
+          elif [[ (-n $high) && ($high != 0)]]; then
+            IMAGE_RISK=6
+          elif [[ (-n $medium) && ($medium != 0)]]; then
+            IMAGE_RISK=4
+          else [[ (-n $low) && ($low != 0)]]; then
+            IMAGE_RISK=2
+          fi
+
+          echo "Add \"sccs-image-risk\" annotation to \"${PARAM_IMAGE}\""
+          yq -i 'with(.metadata.annotations; .sscs-image-risk = strenv(PERMALINK))' "${deployment_patch_filepath}"
+        fi
 
         git add .
         git commit -m "Update '${component_name}' component image to: ${PARAM_IMAGE}"
