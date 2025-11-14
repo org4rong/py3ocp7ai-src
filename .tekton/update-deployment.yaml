@@ -46,8 +46,10 @@ spec:
           value: $(params.git-url)
         - name: PARAM_REV
           value: $(params.revision)
-        - name: IMAGE_SCAN_SUMMAY
+        - name: SCAN_OUTPUT
           value: $(tasks.acs-image-scan.results.SCAN_OUTPUT)
+        - name: SCAN_COMMAND
+          value: $(tasks.acs-image-scan.results.SCAN_COMMAND)
       script: |2
 
         if [ "${WORKSPACE_GITOPS_AUTH_DIRECTORY_BOUND}" = "true" ] ; then
@@ -107,9 +109,9 @@ spec:
         # in terms of "cveSeverity": CRITICAL, IMPORTANT, MODERATE, LOW
         # Set risk value 8 for CRITICAL as 8, 6 for IMPORTANT, 4 for MODERATE, or 2 for LOW
 
-        echo "image scan summary: ${IMAGE_SCAN_SUMMAY}"
-        if [[ -n "${IMAGE_SCAN_SUMMAY}" ]]; then
-          vuln=$(echo ${IMAGE_SCAN_SUMMAY} | jq -r '.vulnerabilities')
+        echo "Image scan summary: ${SCAN_OUTPUT}"
+        if [[ -n "${SCAN_OUTPUT}" ]]; then
+          vuln=$(echo ${SCAN_OUTPUT} | jq -r '.vulnerabilities')
           critical=$(echo $vuln | jq .critical)
           high=$(echo $vuln | jq .high)
           medium=$(echo $vuln | jq .medium)
@@ -128,6 +130,10 @@ spec:
 
           echo "Add \"sccs-image-risk\" annotation for \"${PARAM_IMAGE}\""
           yq -i 'with(.metadata.annotations; .sscs-image-risk = env(IMAGE_RISK))' "${deployment_patch_filepath}"
+
+          export SCAN_COMMAND
+          echo "Add \"sccs-image-scanner\" annotation for \"${PARAM_IMAGE}\""
+          yq -i 'with(.metadata.annotations; .sscs-image-scanner = env(SCAN_COMMAND))' "${deployment_patch_filepath}"
         fi
 
         git add .
