@@ -137,10 +137,9 @@ spec:
           SCAN_COMMAND="./roxctl image scan \
             $( [ "${PARAM_INSECURE_SKIP_TLS_VERIFY}" = "true" ] && \
             echo -n "--insecure-skip-tls-verify") \
-            -e "${ROX_CENTRAL_ENDPOINT}" --image "$IMAGE" --output json --force \
-            > roxctl_image_scan_output.json"
+            -e "${ROX_CENTRAL_ENDPOINT}" --image "$IMAGE" --output json --force"
           
-          eval "${SCAN_COMMAND}"
+          eval "${SCAN_COMMAND}" > roxctl_image_scan_output.json
           image_scan_err_code=$?
 
           cp -f roxctl_image_scan_output.json /steps-shared-folder/acs-image-scan.json
