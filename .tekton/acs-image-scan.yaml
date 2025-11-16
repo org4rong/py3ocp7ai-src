@@ -134,10 +134,7 @@ spec:
         while true; do
           retry=$(( retry - 1 ))
 
-          SCAN_COMMAND="./roxctl image scan \
-            $( [ "${PARAM_INSECURE_SKIP_TLS_VERIFY}" = "true" ] && \
-            echo -n "--insecure-skip-tls-verify") \
-            -e "${ROX_CENTRAL_ENDPOINT}" --image "$IMAGE" --output json --force"
+          SCAN_COMMAND="./roxctl image scan $([ "${PARAM_INSECURE_SKIP_TLS_VERIFY}" = "true" ] && echo -n "--insecure-skip-tls-verify") -e "${ROX_CENTRAL_ENDPOINT}" --image "$IMAGE" --output json --force"
           
           eval "${SCAN_COMMAND}" > roxctl_image_scan_output.json
           image_scan_err_code=$?
